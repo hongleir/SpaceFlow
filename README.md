@@ -20,9 +20,9 @@ conda activate spaceflow_env
 ```
 
 ### 2. Install SpaceFlow
-Download the SpaceFlow package from Github and switch to the `spatial-constrained-clustering-and-pseudotime` directory in command line, then run the following command to install SpaceFlow:
+Install the SpaceFlow package using `pip` by:
 ```bash                                          
-pip install --user .
+pip install SpaceFlow==0.1.0
 ```
 
 ## Usage
