@@ -137,6 +137,16 @@ Parameters:
 - `colormap`: the colormap of the different domains, full colormap options see [matplotlib](https://matplotlib.org/3.5.1/tutorials/colors/colormaps.html)
 - `scatter_sz`: the marker size in points. (default: 1.0)
 
+We can also visualize the expert annotation for comparison by:
+
+```python
+import scanpy as sc
+sc.pl.spatial(adata, 
+    color="celltype_mapped_refined",
+    spot_size=0.03)
+```
+![Expert Annotation](images/annotation.png)
+
 #### 8. Idenfify the spatiotemporal patterns of the ST data through pseudo-Spatiotemporal Map (pSM)
 
 Next, we apply the diffusion pseudotime (dpt) algorithm to the learned spatially-consistent embedding to generate a pseudo-Spatiotemporal Map (pSM). This pSM represents a spatially-coherent pseudotime ordering of cells that encodes biological relationships between cells, such as developmental trajectories and cancer progression
