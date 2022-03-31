@@ -145,6 +145,9 @@ sc.pl.spatial(adata,
     color="celltype_mapped_refined",
     spot_size=0.03)
 ```
+
+The expected output is:
+
 ![Expert Annotation](images/annotation.png)
 
 #### 8. Idenfify the spatiotemporal patterns of the ST data through pseudo-Spatiotemporal Map (pSM)
