@@ -22,7 +22,7 @@ conda activate spaceflow_env
 ### 2. Install SpaceFlow
 Install the SpaceFlow package using `pip` by:
 ```bash                                          
-pip install SpaceFlow==0.1.0
+pip install SpaceFlow
 ```
 
 ## Usage
