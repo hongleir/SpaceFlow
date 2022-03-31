@@ -18,27 +18,9 @@ After create the environment, you can activate the `spaceflow_env` environment b
 ```bash
 conda activate spaceflow_env
 ```
-You can deactivate the `spaceflow_env` environment anytime by:
-```bash
-conda deactivate
-```
 
-### 2. Install Pytorch and dependencies
-SpaceFlow depends on several packages, such as: [torch](https://pytorch.org/), [numpy](https://numpy.org/), [scipy](https://scipy.org/), [networkx](https://networkx.org/), etc. See a full list of the dependencies in `requirements.txt` file.
-
-Before install the SpaceFlow, we first need to install `Pytorch` by:
-
-```bash
-pip install --user torch==1.9.0 
-```
-
-Then, we install other dependencies through:
-```bash
-pip install --user --requirement requirements.txt
-```
-
-### 3. Install SpaceFlow
-Switch to the `spatial-constrained-clustering-and-pseudotime` directory of the downloaded SpaceFlow package in command line, and run the following command to install SpaceFlow:
+### 2. Install SpaceFlow
+Download the SpaceFlow package from Github and switch to the `spatial-constrained-clustering-and-pseudotime` directory in command line, then run the following command to install SpaceFlow:
 ```bash                                          
 pip install --user .
 ```
@@ -137,20 +119,18 @@ sf.plot_segmentation(segmentation_figure_save_filepath="./domain_segmentation.pd
                      scatter_sz=1.)
 ```
 
-The expected output is:
-
-![Domain Segmentation](images/domain_segmentation.png)
-
 We can also visualize the expert annotation for comparison by:
 
 ```python
 import scanpy as sc
-sc.pl.spatial(adata, color="celltype_mapped_refined", spot_size=0.03)
+sc.pl.spatial(adata, 
+    color="celltype_mapped_refined",
+    spot_size=0.03)
 ```
 
 The expected output is:
 
-![Expert Annotation](images/annotation.png)
+![Domain Segmentation](images/domain_segmentation.png)
 
 Parameters:
 - `segmentation_figure_save_filepath`: the file path for saving the figure of the spatial domain visualization. (default: "./domain_segmentation.pdf")
@@ -183,7 +163,7 @@ sf.plot_pSM(pSM_figure_save_filepath="./pseudo-Spatiotemporal-Map.pdf",
             scatter_sz=1.)
 ```
 
-The expected output is like below: 
+The expected output is: 
  
 ![pSM](images/pSM.png)
 
