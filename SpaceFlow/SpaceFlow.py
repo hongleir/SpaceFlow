@@ -5,6 +5,7 @@ import torch
 import random
 import gudhi
 import anndata
+import cmcrameri
 import numpy as np
 import scanpy as sc
 import networkx as nx
@@ -42,7 +43,7 @@ class SpaceFlow(object):
         self.adata = anndata.AnnData(expr_data.astype(float))
         self.adata.obsm['spatial'] = spatial_locs.astype(float)
 
-    def preprocessing_data(self, n_top_genes=None):
+    def preprocessing_data(self, n_top_genes=None, n_neighbors=10):
         """
         Preprocessing the spatial transcriptomics data
         Generates:  `self.adata_filtered`: (n_cells, n_locations) `numpy.ndarray`
@@ -51,6 +52,8 @@ class SpaceFlow(object):
         :type adata: class:`anndata.annData`
         :param n_top_genes: the number of top highly variable genes
         :type n_top_genes: int, optional
+        :param n_neighbors: the number of nearest neighbors for building spatial neighbor graph
+        :type n_neighbors: int, optional
         :return: a preprocessed annData object of the spatial transcriptomics data
         :rtype: class:`anndata.annData`
         :return: a geometry-aware spatial proximity graph of the spatial spots of cells
@@ -65,22 +68,22 @@ class SpaceFlow(object):
         sc.pp.highly_variable_genes(adata, n_top_genes=n_top_genes, flavor='cell_ranger', subset=True)
         sc.pp.pca(adata)
         spatial_locs = adata.obsm['spatial']
-        spatial_graph = self.graph_alpha(spatial_locs)
+        spatial_graph = self.graph_alpha(spatial_locs, n_neighbors=n_neighbors)
 
         self.adata_preprocessed = adata
         self.spatial_graph = spatial_graph
 
-    def graph_alpha(self, spatial_locs, n_neighbors_for_knn_graph=10):
+    def graph_alpha(self, spatial_locs, n_neighbors=10):
         """
         Construct a geometry-aware spatial proximity graph of the spatial spots of cells by using alpha complex.
         :param adata: the annData object for spatial transcriptomics data with adata.obsm['spatial'] set to be the spatial locations.
         :type adata: class:`anndata.annData`
-        :param n_neighbors_for_knn_graph: the number of nearest neighbors for the knn graph, which is here as an estimation of the graph cut for building alpha complex graoh
-        :type n_neighbors_for_knn_graph: int, optional, default: 10
-        :return: a geometry-aware spatial proximity graph of the spatial spots of cells
+        :param n_neighbors: the number of nearest neighbors for building spatial neighbor graph based on Alpha Complex
+        :type n_neighbors: int, optional, default: 10
+        :return: a spatial neighbor graph
         :rtype: class:`scipy.sparse.csr_matrix`
         """
-        A_knn = kneighbors_graph(spatial_locs, n_neighbors=n_neighbors_for_knn_graph, mode='distance')
+        A_knn = kneighbors_graph(spatial_locs, n_neighbors=n_neighbors, mode='distance')
         estimated_graph_cut = A_knn.sum() / float(A_knn.count_nonzero())
         spatial_locs_list = spatial_locs.tolist()
         n_node = len(spatial_locs_list)
@@ -106,8 +109,35 @@ class SpaceFlow(object):
 
         return nx.to_scipy_sparse_matrix(extended_graph, format='csr')
 
-    def train(self, embedding_save_filepath="./embedding.tsv", spatial_regularization_strength=0.1, z_dim=50, lr=0.001, epochs=1000, max_patience=50, min_stop=100, random_seed=42, gpu=0):
+    def train(self, embedding_save_filepath="./embedding.tsv", spatial_regularization_strength=0.1, z_dim=50, lr=1e-3, epochs=1000, max_patience=50, min_stop=100, random_seed=42, gpu=0, regularization_acceleration=True, edge_subset_sz=1000000):
         adata_preprocessed, spatial_graph = self.adata_preprocessed, self.spatial_graph
+        """
+        Training the Deep GraphInfomax Model
+        :param embedding_save_filepath: the default save path for the low-dimensional embeddings
+        :type embedding_save_filepath: class:`str`
+        :param spatial_regularization_strength: the strength for spatial regularization
+        :type spatial_regularization_strength: float, optional, default: 0.1
+        :param z_dim: the size of latent dimension
+        :type z_dim: int, optional, default: 50
+        :param lr: the learning rate for model optimization
+        :type lr: float, optional, default: 1e-3
+        :param epochs: the max epoch number 
+        :type epochs: int, optional, default: 1000
+        :param max_patience: the tolerance epoch number without training loss decrease
+        :type max_patience: int, optional, default: 50
+        :param min_stop: the minimum epoch number for training before any early stop
+        :type min_stop: int, optional, default: 100
+        :param random_seed: the random seed
+        :type random_seed: int, optional, default: 42
+        :param gpu: the index for gpu device that will be used for model training, if no gpu detected, cpu will be used.
+        :type gpu: int, optional, default: 0
+        :param regularization_acceleration: whether or not accelerate the calculation of regularization loss using edge subsetting strategy
+        :type regularization_acceleration: bool, optional, default: True
+        :param edge_subset_sz: the edge subset size for regularization acceleration
+        :type edge_subset_sz: int, optional, default: 1000000
+        :return: low dimensional embeddings for the ST data, shape: n_cells x z_dim
+        :rtype: class:`numpy.ndarray`
+        """
         if not adata_preprocessed:
             print("The data has not been preprocessed, please run preprocessing_data() method first!")
             return
@@ -139,19 +169,29 @@ class SpaceFlow(object):
             z, neg_z, summary = model(expr, edge_list)
             loss = model.loss(z, neg_z, summary)
 
-            z1, z2 = torch.index_select(z, 0, edge_list[0, :]), torch.index_select(z, 0, edge_list[1, :])
             coords = torch.tensor(adata_preprocessed.obsm['spatial']).float().to(device)
-            c1, c2 = torch.index_select(coords, 0, edge_list[0, :]), torch.index_select(coords, 0, edge_list[1, :])
+            if regularization_acceleration or adata_preprocessed.shape[0] > 5000:
+                cell_random_subset_1, cell_random_subset_2 = torch.randint(0, z.shape[0], (edge_subset_sz,)).to(
+                    device), torch.randint(0, z.shape[0], (edge_subset_sz,)).to(device)
+                z1, z2 = torch.index_select(z, 0, cell_random_subset_1), torch.index_select(z, 0, cell_random_subset_2)
+                c1, c2 = torch.index_select(coords, 0, cell_random_subset_1), torch.index_select(coords, 0,
+                                                                                                 cell_random_subset_1)
+                pdist = torch.nn.PairwiseDistance(p=2)
 
-            pdist = torch.nn.PairwiseDistance(p=2)
+                z_dists = pdist(z1, z2)
+                z_dists = z_dists / torch.max(z_dists)
 
-            z_dists = pdist(z1, z2)
-            z_dists = z_dists / torch.max(z_dists)
+                sp_dists = pdist(c1, c2)
+                sp_dists = sp_dists / torch.max(sp_dists)
+                n_items = z_dists.size(dim=0)
+            else:
+                z_dists = torch.cdist(z, z, p=2)
+                z_dists = torch.div(z_dists, torch.max(z_dists)).to(device)
+                sp_dists = torch.cdist(coords, coords, p=2)
+                sp_dists = torch.div(sp_dists, torch.max(sp_dists)).to(device)
+                n_items = z.size(dim=0) * z.size(dim=0)
 
-            sp_dists = pdist(c1, c2)
-            sp_dists = sp_dists / torch.max(sp_dists)
-
-            penalty_1 = torch.div(torch.sum(torch.mul(1.0 - z_dists, sp_dists)), z_dists.size(dim=0)).to(device)
+            penalty_1 = torch.div(torch.sum(torch.mul(1.0 - z_dists, sp_dists)), n_items).to(device)
             loss = loss + spatial_regularization_strength * penalty_1
 
             loss.backward()
@@ -183,6 +223,17 @@ class SpaceFlow(object):
         return embedding
 
     def segmentation(self, domain_label_save_filepath="./domains.tsv", n_neighbors=50, resolution=1.0):
+        """
+        Perform domain segmentation for ST data using Leiden clustering with low-dimensional embeddings as input
+        :param domain_label_save_filepath: the default save path for the domain labels
+        :type domain_label_save_filepath: class:`str`, optional, default: "./domains.tsv"
+        :param n_neighbors: The size of local neighborhood (in terms of number of neighboring data
+        points) used for manifold approximation. See `https://scanpy.readthedocs.io/en/stable/generated/scanpy.pp.neighbors.html` for detail
+        :type n_neighbors: int, optional, default: 50
+        :param resolution: A parameter value controlling the coarseness of the clustering.
+        Higher values lead to more clusters. See `https://scanpy.readthedocs.io/en/stable/generated/scanpy.tl.leiden.html` for detail
+        :type resolution: float, optional, default: 1.0
+        """
         error_message = "No embedding found, please ensure you have run train() method before segmentation!"
         try:
             print("Performing domain segmentation")
@@ -204,6 +255,15 @@ class SpaceFlow(object):
             print(error_message)
 
     def plot_segmentation(self, segmentation_figure_save_filepath="./domain_segmentation.pdf", colormap="tab20", scatter_sz=1.):
+        """
+        Plot the domain segmentation for ST data in spatial
+        :param segmentation_figure_save_filepath: the default save path for the figure
+        :type segmentation_figure_save_filepath: class:`str`, optional, default: "./domain_segmentation.pdf"
+        :param colormap: The colormap to use. See `https://matplotlib.org/stable/tutorials/colors/colormaps.html` for full list of colormaps
+        :type colormap: str, optional, default: tab20
+        :param scatter_sz: The marker size in points**2
+        :type scatter_sz: float, optional, default: 1.0
+        """
         error_message = "No segmentation data found, please ensure you have run the segmentation() method."
         try:
             fig, ax = figure(nrow=1, ncol=1)
@@ -231,7 +291,6 @@ class SpaceFlow(object):
             save_dir = os.path.dirname(segmentation_figure_save_filepath)
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
-            plt.show()
             plt.savefig(segmentation_figure_save_filepath, dpi=300)
             print(f"Plotting complete, segmentation figure saved at {segmentation_figure_save_filepath} !")
             plt.close('all')
@@ -240,8 +299,20 @@ class SpaceFlow(object):
         except AttributeError:
             print(error_message)
 
-    def pseudo_Spatiotemporal_Map(self, pSM_values_save_filepath="./pSM_values.tsv", n_neighbors=20, resolution=1.0, cell_number_threshold_for_subsampling=5000):
+    def pseudo_Spatiotemporal_Map(self, pSM_values_save_filepath="./pSM_values.tsv", n_neighbors=20, resolution=1.0):
+        """
+        Perform pseudo-Spatiotemporal Map for ST data
+        :param pSM_values_save_filepath: the default save path for the pSM values
+        :type pSM_values_save_filepath: class:`str`, optional, default: "./pSM_values.tsv"
+        :param n_neighbors: The size of local neighborhood (in terms of number of neighboring data
+        points) used for manifold approximation. See `https://scanpy.readthedocs.io/en/stable/generated/scanpy.pp.neighbors.html` for detail
+        :type n_neighbors: int, optional, default: 20
+        :param resolution: A parameter value controlling the coarseness of the clustering.
+        Higher values lead to more clusters. See `https://scanpy.readthedocs.io/en/stable/generated/scanpy.tl.leiden.html` for detail
+        :type resolution: float, optional, default: 1.0
+        """
         error_message = "No embedding found, please ensure you have run train() method before calculating pseudo-Spatiotemporal Map!"
+        max_cell_for_subsampling = 5000
         try:
             print("Performing pseudo-Spatiotemporal Map")
             adata = anndata.AnnData(self.embedding)
@@ -249,11 +320,11 @@ class SpaceFlow(object):
             sc.tl.umap(adata)
             sc.tl.leiden(adata, resolution=resolution)
             sc.tl.paga(adata)
-            if adata.shape[0] < cell_number_threshold_for_subsampling:
+            if adata.shape[0] < max_cell_for_subsampling:
                 sub_adata_x = adata.X
             else:
                 indices = np.arange(adata.shape[0])
-                selected_ind = np.random.choice(indices, cell_number_threshold_for_subsampling, False)
+                selected_ind = np.random.choice(indices, max_cell_for_subsampling, False)
                 sub_adata_x = adata.X[selected_ind, :]
             sum_dists = distance_matrix(sub_adata_x, sub_adata_x).sum(axis=1)
             adata.uns['iroot'] = np.argmax(sum_dists)
@@ -271,12 +342,21 @@ class SpaceFlow(object):
         except AttributeError:
             print(error_message)
 
-    def plot_pSM(self, pSM_figure_save_filepath="./pseudo-Spatiotemporal-Map.pdf", colormap="gist_rainbow", scatter_sz=1.):
-        error_message = "No segmentation data found, please ensure you have run the segmentation() method."
+    def plot_pSM(self, pSM_figure_save_filepath="./pseudo-Spatiotemporal-Map.pdf", colormap='roma', scatter_sz=1.):
+        """
+        Plot the domain segmentation for ST data in spatial
+        :param pSM_figure_save_filepath: the default save path for the figure
+        :type pSM_figure_save_filepath: class:`str`, optional, default: "./Spatiotemporal-Map.pdf"
+        :param colormap: The colormap to use. See `https://www.fabiocrameri.ch/colourmaps-userguide/` for name list of colormaps
+        :type colormap: str, optional, default: roma
+        :param scatter_sz: The marker size in points**2
+        :type scatter_sz: float, optional, default: 1.0
+        """
+        error_message = "No pseudo Spatiotemporal Map data found, please ensure you have run the pseudo_Spatiotemporal_Map() method."
         try:
             fig, ax = figure(nrow=1, ncol=1)
             x, y = self.adata_preprocessed.obsm["spatial"][:, 0], self.adata_preprocessed.obsm["spatial"][:, 1]
-            st = ax.scatter(x, y, s=scatter_sz, c=self.pSM_values, cmap=plt.get_cmap(colormap), marker=".")
+            st = ax.scatter(x, y, s=scatter_sz, c=self.pSM_values, cmap=f"cmc.{colormap}", marker=".")
             ax.invert_yaxis()
             clb = fig.colorbar(st)
             clb.ax.set_ylabel("pseudotime", labelpad=10, rotation=270, fontsize=10, weight='bold')
@@ -286,7 +366,6 @@ class SpaceFlow(object):
             save_dir = os.path.dirname(pSM_figure_save_filepath)
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
-            plt.show()
             plt.savefig(pSM_figure_save_filepath, dpi=300)
             print(f"Plotting complete, pseudo-Spatiotemporal Map figure saved at {pSM_figure_save_filepath} !")
             plt.close('all')
