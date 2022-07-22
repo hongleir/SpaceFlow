@@ -164,7 +164,7 @@ Parameters:
 - `colormap`:  the colormap of the pSM (default: 'roma'), full colormap options see [Scientific Colormaps](https://www.fabiocrameri.ch/colourmaps-userguide/)
 -  `scatter_sz`: the marker size in points. (default: 1.0)   
 
-## Please cite the following paper:
+## Please cite
 
 Ren, Honglei, et al. "Identifying multicellular spatiotemporal organization of cells with SpaceFlow." Nature Communications 13.1 (2022): 1-14. https://www.nature.com/articles/s41467-022-31739-w
 
