@@ -7,6 +7,8 @@ SpaceFlow is Python package for identifying spatiotemporal patterns and spatial 
 2. Incorporates **spatiotemporal** relationships of cells or spots in ST data through a **pseudo-Spatiotemporal Map (pSM)** derived from the embeddings.
 3. Identifies **spatial domains** with spatially-coherent expression patterns.
 
+Check out (our paper (Ren et al., Nature Communications, 2022))[https://www.nature.com/articles/s41467-022-31739-w] for the detailed methods and applications.
+
 SpaceFlow was developed in `Python 3.7` with `Pytorch 1.9.0`. Specific package versions are available in `requirements.txt`. The marker gene identification analysis is performed using `Scanpy 1.8.1` package. The cell-cell communication inference is performed through `CellChat v1.1.3` in a `R v4.1.2` environment.
 
 ## Installation
