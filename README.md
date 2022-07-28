@@ -112,7 +112,7 @@ Parameters:
 We next plot the spatial domains using the identified domain labels and spatial coordinates of cells.
 
 ```python
-sf.plot_segmentation(segmentation_figure_save_filepath="./domain_segmentation.pdf", colormap="tab20", scatter_sz=1.)
+sf.plot_segmentation(segmentation_figure_save_filepath="./domain_segmentation.pdf", colormap="tab20", scatter_sz=1., rsz=4., csz=4., wspace=.4, hspace=.5, left=0.125, right=0.9, bottom=0.1, top=0.9)
 ```
 
 The expected output is:
@@ -120,9 +120,17 @@ The expected output is:
 ![Domain Segmentation](images/domain_segmentation.png)
 
 Parameters:
-- `segmentation_figure_save_filepath`: the file path for saving the figure of the spatial domain visualization. (default: "./domain_segmentation.pdf")
-- `colormap`: the colormap of the different domains, full colormap options see [matplotlib](https://matplotlib.org/3.5.1/tutorials/colors/colormaps.html)
-- `scatter_sz`: the marker size in points. (default: 1.0)
+- `segmentation_figure_save_filepath`: optional, type: str, the file path for saving the figure of the spatial domain visualization. (default: "./domain_segmentation.pdf")
+- `colormap`: optional, type: str, the colormap of the different domains, full colormap options see [matplotlib](https://matplotlib.org/3.5.1/tutorials/colors/colormaps.html)
+- `scatter_sz`: optional, type: float, the marker size in points. (default: 1.0)
+- `rsz`: optional, type: float, row size of the figure in inches, (default: 4.0)
+- `csz`: optional, type: float, column size of the figure in inches, (default: 4.0)
+- `wspace`: optional, type: float, the amount of width reserved for space between subplots, expressed as a fraction of the average axis width (default: 0.4)
+- `hspace`: optional, type: float,the amount of height reserved for space between subplots, expressed as a fraction of the average axis height (default: 0.4)
+- `left`: optional, type: float, the leftmost position of the subplots of the figure in fraction (default: 0.125)
+- `right`: optional, type: float, the rightmost position of the subplots of the figure in fraction (default: 0.9)
+- `bottom`: optional, type: float, the bottom position of the subplots of the figure in fraction (default: 0.1)
+- `top`: optional, type: float, the top position of the subplots of the figure in fraction (default: 0.9)
 
 We can also visualize the expert annotation for comparison by:
 
@@ -152,7 +160,7 @@ Parameters:
 We next visualize the identified pseudo-Spatiotemporal Map (pSM).
 
 ```python
-sf.plot_pSM(pSM_figure_save_filepath="./pseudo-Spatiotemporal-Map.pdf", colormap="roma", scatter_sz=1.)
+sf.plot_pSM(pSM_figure_save_filepath="./pseudo-Spatiotemporal-Map.pdf", colormap="roma", scatter_sz=1., rsz=4., csz=4., wspace=.4, hspace=.5, left=0.125, right=0.9, bottom=0.1, top=0.9)
 ```
 
 The expected output is: 
@@ -160,9 +168,17 @@ The expected output is:
 ![pSM](images/pSM.png)
 
 Parameters:
-- `pSM_figure_save_filepath`: the file path for saving the figure of the pSM visualization. (default: "./pseudo-Spatiotemporal-Map.pdf")
-- `colormap`:  the colormap of the pSM (default: 'roma'), full colormap options see [Scientific Colormaps](https://www.fabiocrameri.ch/colourmaps-userguide/)
--  `scatter_sz`: the marker size in points. (default: 1.0)   
+- `pSM_figure_save_filepath`: optional, type: str, the file path for saving the figure of the pSM visualization. (default: "./pseudo-Spatiotemporal-Map.pdf")
+- `colormap`:  optional, type: str, the colormap of the pSM (default: 'roma'), full colormap options see [Scientific Colormaps](https://www.fabiocrameri.ch/colourmaps-userguide/)
+- `scatter_sz`:optional, type: float, the marker size in points. (default: 1.0)
+- `rsz`: optional, type: float, row size of the figure in inches, (default: 4.0)
+- `csz`: optional, type: float, column size of the figure in inches, (default: 4.0)
+- `wspace`: optional, type: float, the amount of width reserved for space between subplots, expressed as a fraction of the average axis width (default: 0.4)
+- `hspace`: optional, type: float,the amount of height reserved for space between subplots, expressed as a fraction of the average axis height (default: 0.4)
+- `left`: optional, type: float, the leftmost position of the subplots of the figure in fraction (default: 0.125)
+- `right`: optional, type: float, the rightmost position of the subplots of the figure in fraction (default: 0.9)
+- `bottom`: optional, type: float, the bottom position of the subplots of the figure in fraction (default: 0.1)
+- `top`: optional, type: float, the top position of the subplots of the figure in fraction (default: 0.9)
 
 ## Please cite
 
