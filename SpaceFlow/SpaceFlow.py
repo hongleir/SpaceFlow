@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial import distance_matrix
 from torch_geometric.nn import GCNConv, DeepGraphInfomax
 from sklearn.neighbors import kneighbors_graph
-from SpaceFlow.util import sparse_mx_to_torch_edge_list, corruption, figure
+from SpaceFlow.util import sparse_mx_to_torch_edge_list, corruption
 
 class SpaceFlow(object):
     """An object for analysis of spatial transcriptomics data.
@@ -42,6 +42,58 @@ class SpaceFlow(object):
         """
         self.adata = anndata.AnnData(expr_data.astype(float))
         self.adata.obsm['spatial'] = spatial_locs.astype(float)
+
+    def plt_setting(self, fig_title_sz=30, font_sz=12, font_weight="bold", axes_title_sz=12, axes_label_sz=12, xtick_sz=10, ytick_sz=10, legend_font_sz=10):
+        """
+        Setting the plotting configuration
+        :param fig_title_sz: fontsize of the figure title, default: 30
+        :type fig_title_sz: int, optional
+        :param font_sz: controls default text sizes, default: 12
+        :type font_sz: int, optional
+        :param font_weight: controls default text weights, default: 'bold'
+        :type font_weight: str, optional
+        :param axes_title_sz: fontsize of the axes title, default: 12
+        :type axes_title_sz: int, optional
+        :param axes_label_sz: fontsize of the x and y labels, default 12
+        :type axes_label_sz: int, optional
+        :param xtick_sz: fontsize of the x tick label, default 10
+        :type xtick_sz: int, optional
+        :param ytick_sz: fontsize of the y tick label, default 10
+        :type ytick_sz: int, optional
+        :param legend_font_sz: legend fontsize, default 10
+        :type legend_font_sz: int, optional
+        """
+        plt.rc('figure', titlesize=fig_title_sz)  # fontsize of the figure title
+        plt.rc('font', size=font_sz, weight=font_weight)  # controls default text sizes
+        plt.rc('axes', titlesize=axes_title_sz)  # fontsize of the axes title
+        plt.rc('axes', labelsize=axes_label_sz)  # fontsize of the x and y labels
+        plt.rc('xtick', labelsize=xtick_sz)  # fontsize of the x tick label
+        plt.rc('ytick', labelsize=ytick_sz)  # fontsize of the y tick label
+        plt.rc('legend', fontsize=legend_font_sz)  # legend fontsize
+
+    def prepare_figure(self, rsz=4., csz=4., wspace=.4, hspace=.5, left=0.125, right=0.9, bottom=0.1, top=0.9):
+        """
+        Prepare the figure and axes given the configuration
+        :param rsz: row size of the figure in inches, default: 4.0
+        :type rsz: float, optional
+        :param csz: column size of the figure in inches, default: 4.0
+        :type csz: float, optional
+        :param wspace: the amount of width reserved for space between subplots, expressed as a fraction of the average axis width, default: 0.4
+        :type wspace: float, optional
+        :param hspace: the amount of height reserved for space between subplots, expressed as a fraction of the average axis width, default: 0.4
+        :type hspace: float, optional
+        :param left: the leftmost position of the subplots of the figure in fraction, default: 0.125
+        :type left: float, optional
+        :param right: the rightmost position of the subplots of the figure in fraction, default: 0.9
+        :type right: float, optional
+        :param bottom: the bottom position of the subplots of the figure in fraction, default: 0.1
+        :type bottom: float, optional
+        :param top: the top position of the subplots of the figure in fraction, default: 0.9
+        :type top: float, optional
+        """
+        fig, axs = plt.subplots(1, 1, figsize=(csz, rsz))
+        plt.subplots_adjust(wspace=wspace, hspace=hspace, left=left, right=right, bottom=bottom, top=top)
+        return fig, axs
 
     def preprocessing_data(self, n_top_genes=None, n_neighbors=10):
         """
@@ -254,7 +306,7 @@ class SpaceFlow(object):
         except AttributeError:
             print(error_message)
 
-    def plot_segmentation(self, segmentation_figure_save_filepath="./domain_segmentation.pdf", colormap="tab20", scatter_sz=1.):
+    def plot_segmentation(self, segmentation_figure_save_filepath="./domain_segmentation.pdf", colormap="tab20", scatter_sz=1., rsz=4., csz=4., wspace=.4, hspace=.5, left=0.125, right=0.9, bottom=0.1, top=0.9):
         """
         Plot the domain segmentation for ST data in spatial
         :param segmentation_figure_save_filepath: the default save path for the figure
@@ -263,10 +315,26 @@ class SpaceFlow(object):
         :type colormap: str, optional, default: tab20
         :param scatter_sz: The marker size in points**2
         :type scatter_sz: float, optional, default: 1.0
+        :param rsz: row size of the figure in inches, default: 4.0
+        :type rsz: float, optional
+        :param csz: column size of the figure in inches, default: 4.0
+        :type csz: float, optional
+        :param wspace: the amount of width reserved for space between subplots, expressed as a fraction of the average axis width, default: 0.4
+        :type wspace: float, optional
+        :param hspace: the amount of height reserved for space between subplots, expressed as a fraction of the average axis width, default: 0.4
+        :type hspace: float, optional
+        :param left: the leftmost position of the subplots of the figure in fraction, default: 0.125
+        :type left: float, optional
+        :param right: the rightmost position of the subplots of the figure in fraction, default: 0.9
+        :type right: float, optional
+        :param bottom: the bottom position of the subplots of the figure in fraction, default: 0.1
+        :type bottom: float, optional
+        :param top: the top position of the subplots of the figure in fraction, default: 0.9
+        :type top: float, optional
         """
         error_message = "No segmentation data found, please ensure you have run the segmentation() method."
         try:
-            fig, ax = figure(nrow=1, ncol=1)
+            fig, ax = self.prepare_figure(rsz=rsz, csz=csz, wspace=wspace, hspace=hspace, left=left, right=right, bottom=bottom, top=top)
 
             pred_clusters = np.array(self.domains).astype(int)
             uniq_pred = np.unique(pred_clusters)
@@ -342,7 +410,7 @@ class SpaceFlow(object):
         except AttributeError:
             print(error_message)
 
-    def plot_pSM(self, pSM_figure_save_filepath="./pseudo-Spatiotemporal-Map.pdf", colormap='roma', scatter_sz=1.):
+    def plot_pSM(self, pSM_figure_save_filepath="./pseudo-Spatiotemporal-Map.pdf", colormap='roma', scatter_sz=1., rsz=4., csz=4., wspace=.4, hspace=.5, left=0.125, right=0.9, bottom=0.1, top=0.9):
         """
         Plot the domain segmentation for ST data in spatial
         :param pSM_figure_save_filepath: the default save path for the figure
@@ -351,10 +419,26 @@ class SpaceFlow(object):
         :type colormap: str, optional, default: roma
         :param scatter_sz: The marker size in points**2
         :type scatter_sz: float, optional, default: 1.0
+        :param rsz: row size of the figure in inches, default: 4.0
+        :type rsz: float, optional
+        :param csz: column size of the figure in inches, default: 4.0
+        :type csz: float, optional
+        :param wspace: the amount of width reserved for space between subplots, expressed as a fraction of the average axis width, default: 0.4
+        :type wspace: float, optional
+        :param hspace: the amount of height reserved for space between subplots, expressed as a fraction of the average axis width, default: 0.4
+        :type hspace: float, optional
+        :param left: the leftmost position of the subplots of the figure in fraction, default: 0.125
+        :type left: float, optional
+        :param right: the rightmost position of the subplots of the figure in fraction, default: 0.9
+        :type right: float, optional
+        :param bottom: the bottom position of the subplots of the figure in fraction, default: 0.1
+        :type bottom: float, optional
+        :param top: the top position of the subplots of the figure in fraction, default: 0.9
+        :type top: float, optional
         """
         error_message = "No pseudo Spatiotemporal Map data found, please ensure you have run the pseudo_Spatiotemporal_Map() method."
         try:
-            fig, ax = figure(nrow=1, ncol=1)
+            fig, ax = self.prepare_figure(rsz=rsz, csz=csz, wspace=wspace, hspace=hspace, left=left, right=right, bottom=bottom, top=top)
             x, y = self.adata_preprocessed.obsm["spatial"][:, 0], self.adata_preprocessed.obsm["spatial"][:, 1]
             st = ax.scatter(x, y, s=scatter_sz, c=self.pSM_values, cmap=f"cmc.{colormap}", marker=".")
             ax.invert_yaxis()
