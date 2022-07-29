@@ -26,7 +26,7 @@ conda activate spaceflow_env
 ```
 
 ### 2. Install SpaceFlow
-Install the SpaceFlow package using `pip` by:
+Install the SpaceFlow package and its dependency package `Pytorch` using `pip` by:
 ```bash                                          
 pip install torch SpaceFlow
 ```
