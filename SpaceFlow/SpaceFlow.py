@@ -23,24 +23,34 @@ class SpaceFlow(object):
     :type adata: class:`anndata.AnnData`
     :param count_matrix: count matrix of gene expression, 2D numpy array of size (n_cells, n_genes)
     :type count_matrix: class:`numpy.ndarray`
-    :param spatial_locs: spatial locations of cells (or spots) match to rows of the count matrix, 1D numpy array of size (n_locations,)
+    :param spatial_locs: spatial locations of cells (or spots) match to rows of the count matrix, 1D numpy array of size (n_cells,)
     :type spatial_locs: class:`numpy.ndarray`
+    :param sample_names: list of sample names in 1D numpy str array of size (n_cells,), optional
+    :type sample_names: class:`numpy.ndarray` or `list` of `str`
+    :param gene_names: list of gene names in 1D numpy str array of size (n_genes,), optional
+    :type gene_names: class:`numpy.ndarray` or `list` of `str`
 
     """
 
-    def __init__(self, adata=None, count_matrix=None, spatial_locs=None):
+    def __init__(self, adata=None, count_matrix=None, spatial_locs=None, sample_names=None, gene_names=None):
         """
         Inputs
         ------
         adata: an anndata.AnnData type object, optional (either input `adata` or both `count_matrix` and `spatial_locs`)
         count_matrix : count matrix of gene expression, 2D numpy array of size (n_cells, n_genes)
-        spatial_locs : spatial locations of cells (or spots) match to rows of the count matrix, 1D numpy array of size (n_locations,)
+        spatial_locs : spatial locations of cells (or spots) match to rows of the count matrix, 1D numpy array of size (n_cells,)
+        sample_names : list of sample names in 1D numpy str array of size (n_cells,), optional
+        gene_names : list of gene names in 1D numpy str array of size (n_genes,), optional
         """
         if adata and isinstance(adata, anndata.AnnData):
             self.adata = adata
         elif count_matrix and spatial_locs:
             self.adata = anndata.AnnData(count_matrix.astype(float))
             self.adata.obsm['spatial'] = spatial_locs.astype(float)
+            if gene_names:
+                self.adata.var_names = np.array(gene_names).astype(str)
+            if sample_names:
+                self.adata.obs_names = np.array(sample_names).astype(str)
         else:
             print("Please input either an anndata.AnnData or both the count_matrix (count matrix of gene expression, 2D int numpy array of size (n_cells, n_genes)) and spatial_locs (spatial locations of cells (or spots) in 1D float numpy array of size (n_locations,)) to initiate SpaceFlow object.")
             exit(1)

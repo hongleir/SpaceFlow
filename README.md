@@ -64,14 +64,25 @@ adata = sq.datasets.seqfish()
 ```
 
 #### 3. Create SpaceFlow Object
-We create a SpaceFlow object using the count matrix of gene expression and the corresponding spatial locations of cells (or spots):
+We can create a SpaceFlow object through either `anndata.AnnData` object or the count matrix as input:
 
+To construct SpaceFlow object by inputting an `anndata.AnnData` object:
 ```python
-sf = SpaceFlow.SpaceFlow(expr_data=adata.X, spatial_locs=adata.obsm['spatial'])
+sf = SpaceFlow.SpaceFlow(adata=adata)
 ```
 Parameters:
-- `expr_data`: the count matrix of gene expression, 2D numpy array of size (# of cells, # of genes)
-- `spatial_locs`: spatial locations of cells (or spots) match to rows of the count matrix, 1D numpy array of size (n_locations,)
+- `adata`: the count matrix of gene expression, 2D numpy array of size (# of cells, # of genes), type `anndata.AnnData`, see `https://anndata.readthedocs.io/en/latest/` for more info about`anndata`.
+
+To SpaceFlow object by raw count matrix:
+```python
+sf = SpaceFlow.SpaceFlow(count_matrix=adata.X, spatial_locs=adata.obsm['spatial'], sample_names=adata.obs_names, gene_names=adata.var_names)
+```
+Parameters:
+- `count_matrix`: the count matrix of gene expression, 2D numpy array of size (# of cells, # of genes), type `numpy.ndarray`, optional
+- `spatial_locs`: spatial locations of cells (or spots) match to rows of the count matrix, 1D numpy array of size (n_locations,), type `numpy.ndarray`, optional
+- `sample_names`: list of sample names in 1D numpy str array of size (n_cells,), optional
+- `gene_names`: list of gene names in 1D numpy str array of size (n_genes,), optional
+
 
 #### 4. Preprocessing the ST Data
 Next, we preprocess the ST data by run: 
