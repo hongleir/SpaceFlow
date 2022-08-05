@@ -13,7 +13,7 @@ SpaceFlow was developed in `Python 3.7` with `Pytorch 1.9.0`. Specific package v
 
 ## Installation
 
-### 1. Prepare environment (Optional)
+### 1. Prepare environment
 To install SpaceFlow, we recommend using the [Anaconda Python Distribution](https://anaconda.org/) and creating an isolated environment, so that the SpaceFlow and dependencies don't conflict or interfere with other packages or applications. To create the environment, run the following script in command line:
 
 ```bash
@@ -25,10 +25,22 @@ After create the environment, you can activate the `spaceflow_env` environment b
 conda activate spaceflow_env
 ```
 
-### 2. Install SpaceFlow
-Install the SpaceFlow package using `pip` by:
+### 2. Install `Pytorch`
+Please install `Pytorch` that match your machine and environment first by following the instructions on :
+[https://pytorch.org/get-started/locally/](https://pytorch.org/get-started/locally/)
+
+Note that if you want to install `Pytorch` on a `GPU` machine, you need to install **CUDA** first, see guide here for installing **CUDA** [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads).
+
+### 3. Install SpaceFlow
+After successfully installed `Pytorch` with the version that `>=1.9.0`, install the SpaceFlow package using `pip` by:
 ```bash                                          
-pip install torch SpaceFlow
+pip install SpaceFlow
+```
+
+If the installation is still not successful, try to install the required packages in `requirements.txt` by:
+
+```bash
+pip install -r requirements.txt
 ```
 
 ## Usage
