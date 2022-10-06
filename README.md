@@ -55,6 +55,7 @@ The data is available in [squidpy](https://squidpy.readthedocs.io/en/stable/) pa
 
 ```python
 import squidpy as sq
+import scanpy as sc
 from SpaceFlow import SpaceFlow
 ```
 
