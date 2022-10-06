@@ -61,6 +61,7 @@ from SpaceFlow import SpaceFlow
 #### 2. Load the ST data from squidpy package
 ```python
 adata = sq.datasets.seqfish()
+sc.pp.filter_genes(adata, min_cells=3)
 ```
 
 #### 3. Create SpaceFlow Object
