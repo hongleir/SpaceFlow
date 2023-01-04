@@ -44,7 +44,7 @@ class SpaceFlow(object):
         """
         if adata and isinstance(adata, anndata.AnnData):
             self.adata = adata
-        elif count_matrix and spatial_locs:
+        elif count_matrix is not None and spatial_locs is not None:
             self.adata = anndata.AnnData(count_matrix.astype(float))
             self.adata.obsm['spatial'] = spatial_locs.astype(float)
             if gene_names:
