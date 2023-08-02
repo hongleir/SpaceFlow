@@ -171,7 +171,7 @@ class SpaceFlow(object):
             except:
                 pass
 
-        return nx.to_scipy_sparse_matrix(extended_graph, format='csr')
+        return nx.to_scipy_sparse_array(extended_graph, format='csr')
 
     def train(self, embedding_save_filepath="./embedding.tsv", spatial_regularization_strength=0.1, z_dim=50, lr=1e-3, epochs=1000, max_patience=50, min_stop=100, random_seed=42, gpu=0, regularization_acceleration=True, edge_subset_sz=1000000):
         adata_preprocessed, spatial_graph = self.adata_preprocessed, self.spatial_graph
